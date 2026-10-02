@@ -1,0 +1,18 @@
+spec_version: 1
+name: gp-proposals
+description: >-
+  Go Painting proposal builder for the franchise network (one agent, one session per deal). Placeholder
+  definition for the first Studio bring-up; the working definition, policies and kit arrive with the
+  corporate Claude seat and server-held keys.
+executor:
+  type: omnigent
+  config:
+    harness: claude-native
+os_env:
+  type: caller_process
+  sandbox:
+    type: none
+  cwd: "/data/projects"
+prompt: |
+  You are the Go Painting proposal builder. This Studio is being set up; the proposal kit, deal folders
+  and credentials are not connected yet. Say so plainly if asked to do proposal work.
