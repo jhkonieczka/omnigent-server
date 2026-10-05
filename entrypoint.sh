@@ -93,6 +93,31 @@ if [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME:-}" ] && [ -n "${OMNIGENT_ACCOU
   sleep 25
   echo "--- host status"; omnigent host status 2>&1 | sed 's/^/[host-status] /' | head -30
   # every Omnigent log (server, host, sessions) streams to this container's stdout so Coolify shows session errors
-  (sleep 5; tail -q -n 0 -F /data/.omnigent/logs/*/*.log 2>/dev/null | grep --line-buffered -v -E 'GET /v1/(me|sessions|hosts|projects|agents)[^ ]* HTTP/1.1" 200' | sed 's/^/[omnigent-log] /') &
+  python3 - <<'PY' &
+import os, time, re
+root = "/data/.omnigent/logs"; seen = {}
+quiet = re.compile(r'GET /(v1/(me|sessions|hosts|projects|agents|skills)|health)[^ ]* HTTP/1.1" 200')
+while True:
+    for dp, _, fs in os.walk(root):
+        for f in fs:
+            if not f.endswith(".log"): continue
+            p = os.path.join(dp, f)
+            try:
+                size = os.path.getsize(p)
+            except OSError:
+                continue
+            start = seen.get(p)
+            if start is None:
+                seen[p] = size if "runner" not in dp else 0      # runner logs are new per session: print them whole
+                start = seen[p]
+            if size > start:
+                with open(p, errors="replace") as fh:
+                    fh.seek(start)
+                    for line in fh.read().splitlines():
+                        if not quiet.search(line):
+                            print("[omnigent-log %s] %s" % (os.path.basename(dp), line[:600]), flush=True)
+                seen[p] = size
+    time.sleep(3)
+PY
 fi
 wait $SERVER_PID
