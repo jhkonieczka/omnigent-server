@@ -1,5 +1,5 @@
 spec_version: 1
-name: gp-proposals
+name: proposals
 description: >-
   Go Painting proposal builder for the franchise network: one agent, one session per deal, Claude Code on the
   corporate seat, running on the Studio server. The session's workspace is the franchise's Projects folder

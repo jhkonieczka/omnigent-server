@@ -79,7 +79,7 @@ print("franchises:", ", ".join(fr) or "(none)")
 PY
 
 # ---- server, then this container registers itself as the host
-omnigent server --host 0.0.0.0 --port 6767 --agent /opt/agents/gp-proposals &
+omnigent server --host 0.0.0.0 --port 6767 --agent /opt/agents/proposals &
 SERVER_PID=$!
 for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:6767/ && break; sleep 1; done
 if [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME:-}" ] && [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_PASSWORD:-}" ]; then
