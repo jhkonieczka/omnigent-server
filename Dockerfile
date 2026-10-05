@@ -3,7 +3,7 @@
 # cloned here, and the franchise credentials are server-held. Franchisees never hold a Claude login or a key.
 # No secrets in this image: everything arrives as environment variables; state lives on the /data volume.
 FROM python:3.12-slim
-RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates gnupg ripgrep jq && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends git curl ca-certificates gnupg ripgrep jq tmux procps && rm -rf /var/lib/apt/lists/*
 # Node 20 + Claude Code (the claude-native harness drives the real CLI)
 RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install -y --no-install-recommends nodejs && rm -rf /var/lib/apt/lists/* \
  && npm install -g @anthropic-ai/claude-code@latest && npm cache clean --force
