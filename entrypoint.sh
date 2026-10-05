@@ -48,6 +48,9 @@ sync_repo() { # $1 url  $2 dir
   else git clone -q --depth 1 "$(auth_url "$1")" "$2" || echo "WARN: could not clone $1" ; fi
   [ -d "$2/.git" ] && git -C "$2" remote set-url origin "$1" || true; }
 KIT_URL="${KIT_GIT_URL:-https://github.com/shaungopainting/gp-proposal-skills.git}"
+echo "github token: $([ -n "${GITHUB_TOKEN:-}" ] && echo "set (${#GITHUB_TOKEN} chars)" || echo MISSING); kit url: $(auth_url "$KIT_URL" | sed 's#x-access-token:[^@]*@#x-access-token:<tok>@#')"
+git -c credential.helper= ls-remote "$(auth_url "$KIT_URL")" HEAD >/dev/null 2>&1 && echo "kit repo reachable" || echo "WARN: kit repo NOT reachable with the token"
+export GIT_TERMINAL_PROMPT=0
 sync_repo "$KIT_URL" /data/Projects/gp-proposal-skills
 for s in estimator estimator-airtable-load gp-pipeline gp-proposal-writer gp-schedule-a; do
   [ -d "/data/Projects/gp-proposal-skills/$s" ] && ln -sfn "/data/Projects/gp-proposal-skills/$s" "/data/.claude/skills/$s"; done
