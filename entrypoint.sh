@@ -84,6 +84,9 @@ SERVER_PID=$!
 for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:6767/ && break; sleep 1; done
 if [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME:-}" ] && [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_PASSWORD:-}" ]; then
   printf '%s\n%s\n' "$OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME" "$OMNIGENT_ACCOUNTS_INIT_ADMIN_PASSWORD" | omnigent login http://127.0.0.1:6767 || echo "WARN: host login failed"
-  omnigent host http://127.0.0.1:6767 --background --no-open --non-interactive || echo "WARN: host registration failed"
+  # the host daemon runs as a sibling process with its output on this container's stdout (Coolify logs), not detached
+  (omnigent --log-to-stderr host http://127.0.0.1:6767 --no-open --non-interactive 2>&1 | sed 's/^/[host] /') &
+  sleep 25
+  echo "--- host status"; omnigent host status 2>&1 | sed 's/^/[host-status] /' | head -30
 fi
 wait $SERVER_PID
