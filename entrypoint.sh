@@ -92,5 +92,7 @@ if [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME:-}" ] && [ -n "${OMNIGENT_ACCOU
   (omnigent --log-to-stderr host http://127.0.0.1:6767 --no-open --non-interactive 2>&1 | sed 's/^/[host] /') &
   sleep 25
   echo "--- host status"; omnigent host status 2>&1 | sed 's/^/[host-status] /' | head -30
+  # every Omnigent log (server, host, sessions) streams to this container's stdout so Coolify shows session errors
+  (sleep 5; tail -q -n 0 -F /data/.omnigent/logs/*/*.log 2>/dev/null | grep --line-buffered -v -E 'GET /v1/(me|sessions|hosts|projects|agents)[^ ]* HTTP/1.1" 200' | sed 's/^/[omnigent-log] /') &
 fi
 wait $SERVER_PID
