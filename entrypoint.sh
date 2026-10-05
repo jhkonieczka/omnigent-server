@@ -99,7 +99,7 @@ if [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME:-}" ] && [ -n "${OMNIGENT_ACCOU
   python3 - <<'PY' &
 import os, time, re
 root = "/data/.omnigent/logs"; seen = {}
-quiet = re.compile(r'GET /(v1/(me|sessions|hosts|projects|agents|skills)|health)[^ ]* HTTP/1.1" 200')
+quiet = re.compile(r'GET /(v1/(sessions|hosts|projects|agents|skills)|health)[^ ]* HTTP/1.1" 200')   # /v1/me stays visible: one per page load, it proves the engine pane reached us (10/5)
 while True:
     for dp, _, fs in os.walk(root):
         for f in fs:
