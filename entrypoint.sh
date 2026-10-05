@@ -43,8 +43,8 @@ PY
 # ---- the proposal kit (read-only library) and per-franchise market repos, cloned or fast-forwarded every start
 auth_url() { # add a token to a GitHub https URL when one is configured
   case "$1" in https://github.com/*) [ -n "${GITHUB_TOKEN:-}" ] && echo "https://x-access-token:${GITHUB_TOKEN}@github.com/${1#https://github.com/}" || echo "$1" ;; *) echo "$1" ;; esac; }
-sync_repo() { # $1 url  $2 dir
-  if [ -d "$2/.git" ]; then git -C "$2" fetch -q origin && git -C "$2" reset -q --hard origin/HEAD 2>/dev/null || git -C "$2" pull -q --ff-only || true
+sync_repo() { # $1 url  $2 dir   (the token rides only on the wire; the stored remote stays token-free)
+  if [ -d "$2/.git" ]; then git -C "$2" fetch -q --depth 1 "$(auth_url "$1")" HEAD && git -C "$2" reset -q --hard FETCH_HEAD || echo "WARN: could not refresh $2"
   else git clone -q --depth 1 "$(auth_url "$1")" "$2" || echo "WARN: could not clone $1" ; fi
   [ -d "$2/.git" ] && git -C "$2" remote set-url origin "$1" || true; }
 KIT_URL="${KIT_GIT_URL:-https://github.com/shaungopainting/gp-proposal-skills.git}"
@@ -54,6 +54,7 @@ export GIT_TERMINAL_PROMPT=0
 sync_repo "$KIT_URL" /data/Projects/gp-proposal-skills
 for s in estimator estimator-airtable-load gp-pipeline gp-proposal-writer gp-schedule-a; do
   [ -d "/data/Projects/gp-proposal-skills/$s" ] && ln -sfn "/data/Projects/gp-proposal-skills/$s" "/data/.claude/skills/$s"; done
+echo "kit: $(git -C /data/Projects/gp-proposal-skills log -1 --format=%h 2>/dev/null || echo MISSING); skills linked: $(ls /data/.claude/skills 2>/dev/null | wc -l | tr -d ' ')"
 
 # ---- franchises: FRANCHISES is JSON {"BOS-JK": {"market": "Boston", "owner": "Jay Konieczka", "market_repo": "https://github.com/.../gp-market-BOS-JK.git"}, ...}
 # Each gets /data/franchises/<CODE>/{CLAUDE.md, Projects/, market-reference/, market-notes.md}; a session's workspace
@@ -77,7 +78,7 @@ for code, f in fr.items():
     open(f"{root}/market-notes.md", "a").close()
     if f.get("market_repo"):
         subprocess.call(["sh", "-c", 'auth_url() { case "$1" in https://github.com/*) [ -n "${GITHUB_TOKEN:-}" ] && echo "https://x-access-token:${GITHUB_TOKEN}@github.com/${1#https://github.com/}" || echo "$1" ;; *) echo "$1" ;; esac; }; '
-                        f'd="{root}/market-reference"; u="{f["market_repo"]}"; if [ -d "$d/.git" ]; then git -C "$d" fetch -q origin && git -C "$d" reset -q --hard origin/HEAD || true; else git clone -q --depth 1 "$(auth_url "$u")" "$d" || echo "WARN: no market repo for {code}"; fi; [ -d "$d/.git" ] && git -C "$d" remote set-url origin "$u" || true'])
+                        f'd="{root}/market-reference"; u="{f["market_repo"]}"; if [ -d "$d/.git" ]; then git -C "$d" fetch -q --depth 1 "$(auth_url "$u")" HEAD && git -C "$d" reset -q --hard FETCH_HEAD || echo "WARN: could not refresh market repo for {code}"; else git clone -q --depth 1 "$(auth_url "$u")" "$d" || echo "WARN: no market repo for {code}"; fi; [ -d "$d/.git" ] && git -C "$d" remote set-url origin "$u" || true'])
 print("franchises:", ", ".join(fr) or "(none)")
 PY
 
