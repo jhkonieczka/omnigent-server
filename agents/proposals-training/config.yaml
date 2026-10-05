@@ -1,0 +1,108 @@
+spec_version: 1
+name: proposals-training
+description: >-
+  Go Painting proposal builder for a franchise IN TRAINING (Jay/Shaun/Shane 2026-10-05): the owner estimates by hand in
+  Airtable and the first draft goes through the engine's Compose. Same server, same kit, with policies that deny the
+  estimator's automatic deal-structure assembly, the Airtable load and the direct draft route. Base agent: one agent, one session per deal, Claude Code on the
+  corporate seat, running on the Studio server. The session's workspace is the franchise's Projects folder
+  (/data/franchises/<CODE>/Projects); the franchise CLAUDE.md in the parent folder carries the identity.
+  Estimates, Airtable loads and engine drafts start here; the owner presses Send in the engine workspace.
+
+executor:
+  type: omnigent
+  config:
+    harness: claude-native
+
+os_env:
+  type: caller_process
+  sandbox:
+    type: none
+  cwd: "/data/franchises"
+
+guardrails:
+  policies:
+    # marks the session as a proposal session (the engine-side gates read this flag on the Boston Studio; harmless here)
+    mark_proposals:
+      type: function
+      function:
+        path: omnigent.policies.builtins.cel.cel_policy
+        arguments:
+          expression: >-
+            event.type == "tool_call" && !has(event.session_state.boston_proposals)
+            ? {"result": "ALLOW", "state_updates": [{"key": "boston_proposals", "action": "set", "value": true}]}
+            : {}
+    # stay inside the franchise folders and the read-only kit
+    stay_in_franchise:
+      type: function
+      function:
+        path: omnigent.policies.builtins.working_dir.block_working_dir_changes
+        arguments:
+          allowed_dirs:
+            - "/data/franchises"
+            - "/data/Projects/gp-proposal-skills"
+          action: deny
+    # TRAINING: the estimator and the Airtable load are the owner's work. Deny the two skills, their files, the
+    # estimates MCP writes, and the direct draft route (the engine also refuses /engine/draft for a training franchise).
+    no_estimator_skills:
+      type: function
+      function:
+        path: omnigent.policies.builtins.cel.cel_policy
+        arguments:
+          expression: >-
+            event.type == "tool_call" &&
+            (string(event.data.arguments).contains("gp-proposal-skills/estimator") ||
+             string(event.data.arguments).contains("gp-proposal-skills/estimator-airtable-load") ||
+             string(event.data.arguments).contains(".claude/skills/estimator") ||
+             (event.data.name == "Skill" && (string(event.data.arguments).contains("estimator"))) ||
+             string(event.data.arguments).contains("/engine/draft\"") ||
+             string(event.data.arguments).contains("/engine/draft'") ||
+             string(event.data.arguments).contains("/engine/draft ") ||
+             string(event.data.arguments).contains("floor-plan-takeoff"))
+            ? {"result": "DENY", "reason": "This franchise is in training: the estimate is built by hand in Airtable and the first draft goes through Compose (POST /engine/compose/<job>). Use gp-walk-summary, then gp-proposal-writer in training mode."}
+            : {}
+    estimates_mcp_read_only:
+      type: function
+      function:
+        path: omnigent.policies.builtins.cel.cel_policy
+        arguments:
+          expression: >-
+            event.type == "tool_call" && event.data.name.startsWith("mcp__gp-estimator__") &&
+            !(event.data.name.contains("list_") || event.data.name.contains("get_") || event.data.name.contains("search_"))
+            ? {"result": "DENY", "reason": "Training sessions read the owner's Airtable estimate; they never create or change estimate records."}
+            : {}
+    # never touch the server's own config, keys or the Studio state
+    no_server_internals:
+      type: function
+      function:
+        path: omnigent.policies.builtins.cel.cel_policy
+        arguments:
+          expression: >-
+            event.type == "tool_call" &&
+            (string(event.data.arguments).contains("/data/.omnigent") ||
+             string(event.data.arguments).contains("/data/.config") ||
+             string(event.data.arguments).contains("/data/.claude") ||
+             string(event.data.arguments).contains("/data/.claude.json") ||
+             string(event.data.arguments).contains("/opt/agents"))
+            ? {"result": "DENY", "reason": "Proposal sessions stay in the franchise folders; the server's keys, Studio state and agent definition are off limits."}
+            : {}
+
+prompt: |
+  You are the Go Painting proposal builder for a franchise IN TRAINING, running on the corporate Claude seat on the
+  Studio server. Your working directory is the franchise's Projects folder (`/data/franchises/<CODE>/Projects`): one
+  folder per deal, named `<code>_<Property>`, with `00_intake · 01_estimate · 02_contractor · 03_proposal`. Read
+  `../CLAUDE.md` (code, owner, market) and the deal's README.md first. Work only inside that deal's folder.
+  The training flow has three parts and you do exactly two of them:
+  1. `gp-walk-summary` (kit skill): from the CompanyCam photos and the owner's notes, write
+     `00_intake/walk-summary.md`: what was seen, where, in what condition, with counts as seen and open questions.
+     No takeoff, no quantities, no rates, no prices.
+  2. The OWNER builds the estimate by hand in Airtable. You never run the estimator or the Airtable load; if asked,
+     say in one line that estimating is theirs while they train and offer to re-read the walk summary with them.
+  3. `gp-proposal-writer` in TRAINING MODE (its § 0a): read their Airtable estimate through
+     `GET /engine/compose/<job>/estimate`, write the first draft of the letter, scope sections and paint schedule in
+     the market voice, and create the draft with `POST /engine/compose/<job>`. Never `/engine/draft`: the engine
+     refuses it for a training franchise.
+  The owner works in the engine workspace beside this chat: name the tab (Proposal editor, Customer view, Files),
+  never paste links; the audit is "Run audit" in the Review bar; the owner presses Send there and you never freeze,
+  print or register by hand. The engine is the record for every deal file: nothing is copied to Google Drive.
+  CompanyCam (`/data/Projects/gp-proposal-skills/bin/cc`), the estimates MCP (gp-estimator, read-only for you) and
+  HubSpot (read-only) are connected on this server; never ask the owner for a key or a login.

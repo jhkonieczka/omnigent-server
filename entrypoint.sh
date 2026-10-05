@@ -52,7 +52,7 @@ echo "github token: $([ -n "${GITHUB_TOKEN:-}" ] && echo "set (${#GITHUB_TOKEN} 
 git -c credential.helper= ls-remote "$(auth_url "$KIT_URL")" HEAD >/dev/null 2>&1 && echo "kit repo reachable" || echo "WARN: kit repo NOT reachable with the token"
 export GIT_TERMINAL_PROMPT=0
 sync_repo "$KIT_URL" /data/Projects/gp-proposal-skills
-for s in estimator estimator-airtable-load gp-pipeline gp-proposal-writer gp-schedule-a; do
+for s in estimator estimator-airtable-load gp-pipeline gp-proposal-writer gp-schedule-a gp-walk-summary; do
   [ -d "/data/Projects/gp-proposal-skills/$s" ] && ln -sfn "/data/Projects/gp-proposal-skills/$s" "/data/.claude/skills/$s"; done
 echo "kit: $(git -C /data/Projects/gp-proposal-skills log -1 --format=%h 2>/dev/null || echo MISSING); skills linked: $(ls /data/.claude/skills 2>/dev/null | wc -l | tr -d ' ')"
 
@@ -83,7 +83,7 @@ print("franchises:", ", ".join(fr) or "(none)")
 PY
 
 # ---- server, then this container registers itself as the host
-omnigent server --host 0.0.0.0 --port 6767 --agent /opt/agents/proposals &
+omnigent server --host 0.0.0.0 --port 6767 --agent /opt/agents/proposals --agent /opt/agents/proposals-training &
 SERVER_PID=$!
 for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:6767/ && break; sleep 1; done
 if [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME:-}" ] && [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_PASSWORD:-}" ]; then
