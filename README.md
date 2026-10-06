@@ -19,7 +19,7 @@ for whoever operates this next; the engine side is documented in `proposal-engin
     the first draft through the engine's Compose. The engine picks this agent when the franchise profile has
     `layout.training` (its `/engine/me` returns `agent_name: proposals-training`).
 - **The host**: after the server is up, the entrypoint logs in as the seeded admin and runs `omnigent host` as a sibling
-  process, registered under `OMNIGENT_HOST_NAME` (`HOST_NAME` env, default `studio-host`). Sessions take
+  process. Do **not** set `OMNIGENT_HOST_NAME` alone: Omnigent refuses to start a host unless `OMNIGENT_HOST_ID` is set with it (10/6: that kept the host down for an afternoon). Sessions take
   `workspace=/data/franchises/<CODE>/Projects`.
 - **Logs**: every Omnigent log file (server, host, per-session runner) streams to the container stdout, so Coolify's log
   view shows session failures (e.g. the `tmux is not installed` traceback that broke the first sessions).
@@ -48,7 +48,6 @@ contractor files; nothing in there is modified or deleted by the engine.
 | `HUBSPOT_READ_TOKEN` | HubSpot MCP, read-only |
 | `KIT_GIT_URL`, `GITHUB_TOKEN` | kit + market repos. **The token is currently Jay's personal GitHub token; replace it with a read-only deploy key or a machine user.** |
 | `FRANCHISES` | JSON `{"BOS-JK": {"market": "Boston", "owner": "Jay Konieczka", "market_repo": "https://github.com/jhkonieczka/gp-market-BOS-JK.git"}, ...}` |
-| `HOST_NAME` | the registered host name (default `studio-host`; per-franchise hosts use `studio-host-<CODE>`) |
 
 ## How the engine talks to this Studio (10/6)
 The engine workspace never relies on the browser's Studio cookie (inside Canvas the frame is third-party and Chrome
