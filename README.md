@@ -50,6 +50,15 @@ contractor files; nothing in there is modified or deleted by the engine.
 | `FRANCHISES` | JSON `{"BOS-JK": {"market": "Boston", "owner": "Jay Konieczka", "market_repo": "https://github.com/jhkonieczka/gp-market-BOS-JK.git"}, ...}` |
 | `HOST_NAME` | the registered host name (default `studio-host`; per-franchise hosts use `studio-host-<CODE>`) |
 
+## How the engine talks to this Studio (10/6)
+The engine workspace never relies on the browser's Studio cookie (inside Canvas the frame is third-party and Chrome
+withholds it; the cookie also lasts 8 h). Instead the engine holds each login's Studio credentials in its own env
+`STUDIO_LOGINS` (`jay:<studio password>,casey:<...>`), logs in to `/auth/login`, caches the bearer token and proxies
+`/v1/*` at `/engine/studio/`. **Onboarding a franchisee therefore means:** create their Studio user here (admin
+invite), then add `login:<studio password>` to the engine's `STUDIO_LOGINS` and `login:https://studio.gopainting.com`
+to `USER_STUDIO`. The SameSite/CORS patch stays useful for "Open in Studio" links and for anyone opening the engine
+page directly, but it is no longer load-bearing.
+
 ## Operations
 - **A restart kills every running session** (tmux inside the container). Deploy when no one is mid-proposal; tell the
   owners first.
