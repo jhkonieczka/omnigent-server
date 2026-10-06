@@ -85,7 +85,10 @@ PY
 # ---- server, then this container registers itself as the host
 # the host registers under a stable name (default studio-host); a per-franchise container (its own Claude seat) sets
 # HOST_NAME=studio-host-<CODE> and the engine pane picks it by that name (STUDIO_SESSION_DEFAULTS.host_name)
-export OMNIGENT_HOST_NAME="${HOST_NAME:-studio-host}"
+# 10/6: do NOT export OMNIGENT_HOST_NAME here. Omnigent refuses to start a host when OMNIGENT_HOST_NAME is set without
+# OMNIGENT_HOST_ID ("must be set together (managed-host launch sets both)"); that line kept the host down from the 10/6
+# 14:31Z restart until this fix. The engine picks the first online host when no host_name is configured.
+unset OMNIGENT_HOST_NAME OMNIGENT_HOST_ID
 omnigent server --host 0.0.0.0 --port 6767 --agent /opt/agents/proposals --agent /opt/agents/proposals-training &
 SERVER_PID=$!
 for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:6767/ && break; sleep 1; done
