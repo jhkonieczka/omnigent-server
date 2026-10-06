@@ -9,7 +9,7 @@ RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - && apt-get install
  && npm install -g @anthropic-ai/claude-code@latest && npm cache clean --force
 # no bytecode at build time: a .pyc temp file vanishing between layers broke the first build (containerd lstat)
 ENV PYTHONDONTWRITEBYTECODE=1 UV_COMPILE_BYTECODE=0
-RUN pip install --no-cache-dir uv openpyxl pypdf requests && uv tool install "omnigent==0.16.0" \
+RUN pip install --no-cache-dir uv openpyxl pypdf requests && uv tool install "omnigent==0.17.0" \
  && find /root/.local/share/uv -name "__pycache__" -type d -prune -exec rm -rf {} +
 ENV PATH="/root/.local/bin:${PATH}" HOME=/data OMNIGENT_HOME=/data/.omnigent
 # SameSite=None cookie + CORS allow-list so the engine workspace (proposals.gopainting.com) can frame and drive this
