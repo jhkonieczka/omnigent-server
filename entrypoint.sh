@@ -95,7 +95,14 @@ for i in $(seq 1 60); do curl -sf -o /dev/null http://127.0.0.1:6767/ && break; 
 if [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME:-}" ] && [ -n "${OMNIGENT_ACCOUNTS_INIT_ADMIN_PASSWORD:-}" ]; then
   printf '%s\n%s\n' "$OMNIGENT_ACCOUNTS_INIT_ADMIN_USERNAME" "$OMNIGENT_ACCOUNTS_INIT_ADMIN_PASSWORD" | omnigent login http://127.0.0.1:6767 || echo "WARN: host login failed"
   # the host daemon runs as a sibling process with its output on this container's stdout (Coolify logs), not detached
-  (omnigent --log-to-stderr host http://127.0.0.1:6767 --no-open --non-interactive 2>&1 | sed 's/^/[host] /') &
+  # 10/8: a redeploy starts this container while the old one still runs on the same /data volume, so the old
+  # container's host holds the daemon record and the new host refuses ("A host daemon is already running"); the old
+  # container then stops and no host is left. Keep the host up: retry until it holds the record, and restart it if
+  # it ever exits.
+  ( while true; do
+      omnigent --log-to-stderr host http://127.0.0.1:6767 --no-open --non-interactive 2>&1 | sed 's/^/[host] /'
+      echo "[host] exited; starting again in 10 s"; sleep 10
+    done ) &
   sleep 25
   echo "--- host status"; omnigent host status 2>&1 | sed 's/^/[host-status] /' | head -30
   # every Omnigent log (server, host, sessions) streams to this container's stdout so Coolify shows session errors
