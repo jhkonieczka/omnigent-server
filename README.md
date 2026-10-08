@@ -49,6 +49,28 @@ contractor files; nothing in there is modified or deleted by the engine.
 | `KIT_GIT_URL`, `GITHUB_TOKEN` | kit + market repos. **The token is currently Jay's personal GitHub token; replace it with a read-only deploy key or a machine user.** |
 | `FRANCHISES` | JSON `{"BOS-JK": {"market": "Boston", "owner": "Jay Konieczka", "market_repo": "https://github.com/jhkonieczka/gp-market-BOS-JK.git"}, ...}` |
 
+## The Go Painting Studio hub (10/8)
+**studio.gopainting.com is the hub, served by the proposal engine:**
+- `/login` signs in with the engine login; the session cookie is `gp_session`, set by the engine with `ENGINE_SESSION_SECRET`.
+- The side menu has Canvas, Proposals and Proposal Files.
+
+**This Omnigent lives under the hub at `studio.gopainting.com/canvas-app`.** Omnigent refuses `/canvas` as a base path. Settings:
+- `OMNIGENT_WEB_BASE_PATH=/canvas-app`.
+- `OMNIGENT_ACCOUNTS_BASE_URL=https://studio.gopainting.com/canvas-app`.
+- Coolify domains: `https://studio.gopainting.com/canvas-app` and `https://canvas.gopainting.com` (the old address, kept).
+
+**Canvas (`/canvas` on the hub) needs no second password.** The engine logs in to Omnigent as the user with `STUDIO_LOGINS` and mints Omnigent's own one-time `/auth/magic` link. The Canvas frame follows that link and lands signed in.
+
+**Engine environment:**
+- `USER_STUDIO_EXTRA` overrides `USER_STUDIO` per login.
+- `STUDIO_CANVAS_PATH=/canvas-app` sends any login whose `USER_STUDIO` names the hub root to this Omnigent.
+
+**This app deploys from branch `studio-corp`.**
+- studio-pdx-tb is pinned to `1de1a6b` on `main`, with auto-deploy on. A push to `main` could redeploy Terry's server mid-session, so `main` stays put until Terry moves onto this server.
+- `studio-corp` adds a host retry loop. A redeploy starts the new container while the old one still holds the host daemon record on the shared `/data` volume. Without the loop the new host refused to start, and no host was left once the old container stopped (10/8).
+
+**Next (one server, a worker per seat):** each franchise gets a non-admin Omnigent login and its own host-only container, logged in as that franchise user, with its own `CLAUDE_CODE_OAUTH_TOKEN`. The server checks host ownership on every launch. Admins pass every session check, so franchise logins are never admins. Keep session sharing read-only.
+
 ## How the engine talks to this Studio (10/6)
 The engine workspace never relies on the browser's Studio cookie (inside Canvas the frame is third-party and Chrome
 withholds it; the cookie also lasts 8 h). Instead the engine holds each login's Studio credentials in its own env
