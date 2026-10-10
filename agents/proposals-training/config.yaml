@@ -78,6 +78,9 @@ guardrails:
         arguments:
           expression: >-
             event.type == "tool_call" &&
+            !(event.data.name == "Read" &&
+              string(event.data.arguments).contains("/data/.omnigent/attachments/") &&
+              !string(event.data.arguments).contains("..")) &&
             (string(event.data.arguments).contains("/data/.omnigent") ||
              string(event.data.arguments).contains("/data/.config") ||
              string(event.data.arguments).contains("/data/.claude") ||
