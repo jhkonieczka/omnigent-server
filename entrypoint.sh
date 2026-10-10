@@ -55,6 +55,9 @@ sync_repo "$KIT_URL" /data/Projects/gp-proposal-skills
 for s in estimator estimator-airtable-load gp-pipeline gp-proposal-writer gp-schedule-a gp-walk-summary; do
   [ -d "/data/Projects/gp-proposal-skills/$s" ] && ln -sfn "/data/Projects/gp-proposal-skills/$s" "/data/.claude/skills/$s"; done
 echo "kit: $(git -C /data/Projects/gp-proposal-skills log -1 --format=%h 2>/dev/null || echo MISSING); skills linked: $(ls /data/.claude/skills 2>/dev/null | wc -l | tr -d ' ')"
+# Terry 10/7: a long-lived Studio kept an old kit until the next redeploy. Refresh it every 10 minutes from here, so
+# the token stays in this process and never reaches a session's environment.
+( while sleep "${KIT_REFRESH_SECONDS:-600}"; do sync_repo "$KIT_URL" /data/Projects/gp-proposal-skills >/dev/null 2>&1; done ) &
 
 # ---- franchises: FRANCHISES is JSON {"BOS-JK": {"market": "Boston", "owner": "Jay Konieczka", "market_repo": "https://github.com/.../gp-market-BOS-JK.git"}, ...}
 # Each gets /data/franchises/<CODE>/{CLAUDE.md, Projects/, market-reference/, market-notes.md}; a session's workspace
